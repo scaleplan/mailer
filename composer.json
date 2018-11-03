@@ -1,0 +1,13 @@
+{
+    "name": "scaleplan/mailer",
+    "description": "Mailer objects fabric",
+    "autoload": {
+        "psr-4": {
+            "Scaleplan\\Mailer\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=7.0",
+        "phpmailer/phpmailer": "*"
+    }
+}
