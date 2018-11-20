@@ -33,12 +33,12 @@ class Mailer
     /**
      * Логин для авторизации на SMTP-сервере
      */
-    protected $mailUsername = 'admin@qooiz.me';
+    protected $mailUsername = 'user@domain.com';
 
     /**
      * Пароль для авторизации на SMTP-сервере
      */
-    protected $mailPassword = '81lj54ewv9';
+    protected $mailPassword = 'password';
 
     /**
      * Порт для подключения к SMTP-серверу
@@ -48,22 +48,22 @@ class Mailer
     /**
      * Обратный адрес писем
      */
-    protected $mailFrom = 'admin@qooiz.me';
+    protected $mailFrom = 'user@domain.com';
 
     /**
      * Имя отправителя
      */
-    protected $mailFromName = 'qooiz.me';
+    protected $mailFromName = 'domain.com';
 
     /**
      * Куда присылать ответные письма
      */
-    protected $mailReplyToAddress = 'admin@qooiz.me';
+    protected $mailReplyToAddress = 'user@domain.com';
 
     /**
      * Кому отсылать ответные письма
      */
-    protected $mailReplyToName = 'qooiz.me';
+    protected $mailReplyToName = 'domain.com';
 
     /**
      * Протокол безопасности
