@@ -103,7 +103,7 @@ class Mailer
      * @throws \PHPMailer\PHPMailer\Exception
      * @throws \ReflectionException
      */
-    public function send(array $addresses, string $subject, string $message, array $files = []): bool
+    public function send(array $addresses, \string $subject, \string $message, array $files = []): bool
     {
         $mail = new PHPMailer();
 
@@ -142,7 +142,7 @@ class Mailer
             $mail->addAttachment($file);
         }
 
-        $mail->isHTML(true);
+        $mail->isHTML();
         $mail->Subject = $subject;
         $mail->Body = $message;
 
