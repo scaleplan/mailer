@@ -103,7 +103,7 @@ class Mailer
      * @throws \PHPMailer\PHPMailer\Exception
      * @throws \ReflectionException
      */
-    public function send(array $addresses, \string $subject, \string $message, array $files = []): bool
+    public function send(array $addresses, string $subject, string $message, array $files = []): bool
     {
         $mail = new PHPMailer();
 
