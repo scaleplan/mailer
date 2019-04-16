@@ -3,12 +3,19 @@
 namespace Scaleplan\Mailer;
 
 use PHPMailer\PHPMailer\PHPMailer;
+use Psr\Log\LoggerInterface;
+use function Scaleplan\DependencyInjection\get_required_container;
+use function Scaleplan\Helpers\get_env;
+use function Scaleplan\Helpers\get_required_env;
+use Scaleplan\Mailer\Exceptions\InvalidHostException;
+use function Scaleplan\Translator\translate;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Класс отправки писем
  *
  * Class Mailer
- * 
+ *
  * @package App\Classes
  */
 class Mailer
@@ -17,28 +24,34 @@ class Mailer
 
     /**
      * Язык писем
+     *
+     * @var string
      */
     protected $mailLang = 'ru';
 
     /**
      * Кодировка писем
+     *
+     * @var string
      */
     protected $mailCharset = 'UTF-8';
 
     /**
      * Адрес SMTP-сервера
+     *
+     * @var string
      */
-    protected $mailHost = 'smtp.yandex.ru';
+    protected $mailHost;
 
     /**
      * Логин для авторизации на SMTP-сервере
      */
-    protected $mailUsername = 'user@domain.com';
+    protected $mailUsername;
 
     /**
      * Пароль для авторизации на SMTP-сервере
      */
-    protected $mailPassword = 'password';
+    protected $mailPassword;
 
     /**
      * Порт для подключения к SMTP-серверу
@@ -48,22 +61,22 @@ class Mailer
     /**
      * Обратный адрес писем
      */
-    protected $mailFrom = 'user@domain.com';
+    protected $mailFrom;
 
     /**
      * Имя отправителя
      */
-    protected $mailFromName = 'domain.com';
+    protected $mailFromName;
 
     /**
      * Куда присылать ответные письма
      */
-    protected $mailReplyToAddress = 'user@domain.com';
+    protected $mailReplyToAddress;
 
     /**
      * Кому отсылать ответные письма
      */
-    protected $mailReplyToName = 'domain.com';
+    protected $mailReplyToName;
 
     /**
      * Протокол безопасности
@@ -71,23 +84,255 @@ class Mailer
     protected $mailSMTPSecure = 'ssl';
 
     /**
+     * @var LoggerInterface
+     */
+    protected $logger;
+
+    /**
      * Mailer constructor.
      *
-     * @param array $config
+     * @param string $host
+     * @param string|null $mailFromName
+     * @param string|null $mailFrom
+     *
+     * @throws InvalidHostException
+     * @throws \ReflectionException
+     * @throws \Scaleplan\DependencyInjection\Exceptions\ContainerTypeNotSupportingException
+     * @throws \Scaleplan\DependencyInjection\Exceptions\DependencyInjectionException
+     * @throws \Scaleplan\DependencyInjection\Exceptions\ParameterMustBeInterfaceNameOrClassNameException
+     * @throws \Scaleplan\DependencyInjection\Exceptions\ReturnTypeMustImplementsInterfaceException
+     * @throws \Scaleplan\Helpers\Exceptions\EnvNotFoundException
      */
-    public function __construct(array $config)
+    public function __construct(string $host, string $mailFromName = null, string $mailFrom = null)
     {
-        $this->mailLang = $config['mail_lang'] ?? $this->mailLang;
-        $this->mailCharset = $config['mail_charset'] ?? $this->mailCharset;
-        $this->mailHost = $config['mail_host'] ?? $this->mailHost;
-        $this->mailUsername = $config['mail_username'] ?? $this->mailUsername;
-        $this->mailPassword = $config['mail_password'] ?? $this->mailPassword;
-        $this->mailPort = $config['mail_port'] ?? $this->mailPort;
-        $this->mailFrom = $config['mail_from'] ?? $this->mailFrom;
-        $this->mailFromName = $config['mail_from_name'] ?? $this->mailFromName;
-        $this->mailReplyToAddress = $config['mail_reply_to_address'] ?? $this->mailReplyToAddress;
-        $this->mailReplyToName = $config['mail_reply_to_name'] ?? $this->mailReplyToName;
-        $this->mailSMTPSecure = $config['mail_smtp_secure'] ?? $this->mailSMTPSecure;
+        if (filter_var(gethostbyname($host), FILTER_VALIDATE_IP)) {
+            throw new InvalidHostException();
+        }
+
+        $this->mailLang = get_env('MAIL_LANG') ?? $this->mailLang;
+        $this->mailCharset = get_env('MAIL_CHARSET') ?? $this->mailCharset;
+        $this->mailHost = get_required_env('MAIL_HOST');
+        $this->mailUsername = get_required_env('MAIL_USERNAME');
+        $this->mailPassword = get_required_env('MAIL_PASSWORD');
+        $this->mailPort = get_env('MAIL_PORT') ?? $this->mailPort;
+        $this->mailFrom = $mailFrom ?? get_env('MAIL_FROM') ?? "no-reply@$host";
+        $this->mailFromName = $mailFromName ?? get_env('MAIL_FROM_NAME') ?? $this->mailFromName;
+        $this->mailSMTPSecure = get_env('MAIL_SMTP_SECURE') ?? $this->mailSMTPSecure;
+
+        $locale = locale_accept_from_http($_SERVER['HTTP_ACCEPT_LANGUAGE']) ?: get_required_env('DEFAULT_LANG');
+        /** @var \Symfony\Component\Translation\Translator $translator */
+        $translator = get_required_container(TranslatorInterface::class, [$locale]);
+        $translator->addResource('yml', __DIR__ . "/translates/$locale/mailer.yml", $locale, 'mailer');
+    }
+
+    /**
+     * @param LoggerInterface $logger
+     */
+    public function setLogger(LoggerInterface $logger) : void
+    {
+        $this->logger = $logger;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMailLang()
+    {
+        return $this->mailLang;
+    }
+
+    /**
+     * @param mixed $mailLang
+     */
+    public function setMailLang($mailLang) : void
+    {
+        $this->mailLang = $mailLang;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMailCharset()
+    {
+        return $this->mailCharset;
+    }
+
+    /**
+     * @param mixed $mailCharset
+     */
+    public function setMailCharset($mailCharset) : void
+    {
+        $this->mailCharset = $mailCharset;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMailHost()
+    {
+        return $this->mailHost;
+    }
+
+    /**
+     * @param mixed $mailHost
+     */
+    public function setMailHost($mailHost) : void
+    {
+        $this->mailHost = $mailHost;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMailUsername()
+    {
+        return $this->mailUsername;
+    }
+
+    /**
+     * @param mixed $mailUsername
+     */
+    public function setMailUsername($mailUsername) : void
+    {
+        $this->mailUsername = $mailUsername;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMailPassword()
+    {
+        return $this->mailPassword;
+    }
+
+    /**
+     * @param mixed $mailPassword
+     */
+    public function setMailPassword($mailPassword) : void
+    {
+        $this->mailPassword = $mailPassword;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMailPort()
+    {
+        return $this->mailPort;
+    }
+
+    /**
+     * @param mixed $mailPort
+     */
+    public function setMailPort($mailPort) : void
+    {
+        $this->mailPort = $mailPort;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMailFrom()
+    {
+        return $this->mailFrom;
+    }
+
+    /**
+     * @param mixed $mailFrom
+     */
+    public function setMailFrom($mailFrom) : void
+    {
+        $this->mailFrom = $mailFrom;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMailFromName()
+    {
+        return $this->mailFromName;
+    }
+
+    /**
+     * @param mixed $mailFromName
+     */
+    public function setMailFromName($mailFromName) : void
+    {
+        $this->mailFromName = $mailFromName;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMailReplyToAddress()
+    {
+        return $this->mailReplyToAddress;
+    }
+
+    /**
+     * @param mixed $mailReplyToAddress
+     */
+    public function setMailReplyToAddress($mailReplyToAddress) : void
+    {
+        $this->mailReplyToAddress = $mailReplyToAddress;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMailReplyToName()
+    {
+        return $this->mailReplyToName;
+    }
+
+    /**
+     * @param mixed $mailReplyToName
+     */
+    public function setMailReplyToName($mailReplyToName) : void
+    {
+        $this->mailReplyToName = $mailReplyToName;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getMailSMTPSecure()
+    {
+        return $this->mailSMTPSecure;
+    }
+
+    /**
+     * @param mixed $mailSMTPSecure
+     */
+    public function setMailSMTPSecure($mailSMTPSecure) : void
+    {
+        $this->mailSMTPSecure = $mailSMTPSecure;
+    }
+
+    /**
+     * @param string $message
+     * @param array $context
+     */
+    protected function logOk(string $message, array $context = []) : void
+    {
+        if (!$this->logger) {
+            return;
+        }
+
+        $this->logger->info($message, $context);
+    }
+
+    /**
+     * @param string $message
+     * @param array $context
+     */
+    protected function logError(string $message, array $context = []) : void
+    {
+        if (!$this->logger) {
+            return;
+        }
+
+        $this->logger->error($message, $context);
     }
 
     /**
@@ -102,8 +347,12 @@ class Mailer
      *
      * @throws \PHPMailer\PHPMailer\Exception
      * @throws \ReflectionException
+     * @throws \Scaleplan\DependencyInjection\Exceptions\ContainerTypeNotSupportingException
+     * @throws \Scaleplan\DependencyInjection\Exceptions\DependencyInjectionException
+     * @throws \Scaleplan\DependencyInjection\Exceptions\ParameterMustBeInterfaceNameOrClassNameException
+     * @throws \Scaleplan\DependencyInjection\Exceptions\ReturnTypeMustImplementsInterfaceException
      */
-    public function send(array $addresses, string $subject, string $message, array $files = []): bool
+    public function send(array $addresses, string $subject, string $message, array $files = []) : bool
     {
         $mail = new PHPMailer();
 
@@ -134,7 +383,9 @@ class Mailer
 
         unset($value);
 
-        $mail->addReplyTo($this->mailReplyToAddress, $this->mailReplyToName);
+        if ($this->mailReplyToAddress) {
+            $mail->addReplyTo($this->mailReplyToAddress, $this->mailReplyToName ?? $this->mailReplyToAddress);
+        }
 
         $mail->WordWrap = 50;
 
@@ -147,9 +398,11 @@ class Mailer
         $mail->Body = $message;
 
         if (!$mail->send()) {
+            $this->logError(translate('mailer.error'), ['addresses' => $addresses, 'subject' => $subject]);
             return false;
         }
 
+        $this->logError(translate('mailer.ok'), ['addresses' => $addresses, 'subject' => $subject]);
         return true;
     }
 }
