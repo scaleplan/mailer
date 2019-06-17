@@ -10,6 +10,7 @@ namespace Scaleplan\Mailer\Exceptions;
 class MailerException extends \Exception
 {
     public const MESSAGE = 'Mailer error.';
+    public const CODE = 500;
 
     /**
      * MailerException constructor.
