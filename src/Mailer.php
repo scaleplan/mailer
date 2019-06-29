@@ -92,6 +92,7 @@ class Mailer
      * Mailer constructor.
      *
      * @param string $host
+     * @param string|null $mailLang
      * @param string|null $mailFromName
      * @param string|null $mailFrom
      *
@@ -103,13 +104,17 @@ class Mailer
      * @throws \Scaleplan\DependencyInjection\Exceptions\ReturnTypeMustImplementsInterfaceException
      * @throws \Scaleplan\Helpers\Exceptions\EnvNotFoundException
      */
-    public function __construct(string $host, string $mailFromName = null, string $mailFrom = null)
-    {
+    public function __construct(
+        string $host,
+        string $mailLang = null,
+        string $mailFromName = null,
+        string $mailFrom = null
+    ) {
         if (filter_var(gethostbyname($host), FILTER_VALIDATE_IP)) {
             throw new InvalidHostException();
         }
 
-        $this->mailLang = get_env('MAIL_LANG') ?? $this->mailLang;
+        $this->mailLang = $mailLang ?? get_env('DEFAULT_MAIL_LANG') ?? $this->mailLang;
         $this->mailCharset = get_env('MAIL_CHARSET') ?? $this->mailCharset;
         $this->mailHost = get_required_env('MAIL_HOST');
         $this->mailUsername = get_required_env('MAIL_USERNAME');
