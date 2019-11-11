@@ -15,8 +15,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * Класс отправки писем
  *
  * Class Mailer
- *
- * @package App\Classes
  */
 class Mailer
 {
