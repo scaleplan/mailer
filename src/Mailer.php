@@ -16,7 +16,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  *
  * Class Mailer
  */
-class Mailer
+class Mailer implements MailerInterface
 {
     /* Настроки PHPMailer */
 
