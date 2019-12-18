@@ -108,7 +108,7 @@ class Mailer implements MailerInterface
         string $mailFromName = null,
         string $mailFrom = null
     ) {
-        if (filter_var(gethostbyname($host), FILTER_VALIDATE_IP)) {
+        if (!filter_var(gethostbyname($host), FILTER_VALIDATE_IP)) {
             throw new InvalidHostException();
         }
 
@@ -405,7 +405,7 @@ class Mailer implements MailerInterface
             return false;
         }
 
-        $this->logError(translate('mailer.ok'), ['addresses' => $addresses, 'subject' => $subject]);
+        $this->logOk(translate('mailer.ok'), ['addresses' => $addresses, 'subject' => $subject]);
         return true;
     }
 }
