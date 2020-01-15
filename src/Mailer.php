@@ -1,9 +1,12 @@
 <?php
+declare(strict_types=1);
 
 namespace Scaleplan\Mailer;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use Psr\Log\LoggerInterface;
+use Scaleplan\Mailer\Hooks\MailError;
+use Scaleplan\Mailer\Hooks\MailSended;
 use function Scaleplan\DependencyInjection\get_required_container;
 use function Scaleplan\Helpers\get_env;
 use function Scaleplan\Helpers\get_required_env;
@@ -401,11 +404,18 @@ class Mailer implements MailerInterface
         $mail->Body = $message;
 
         if (!$mail->send()) {
-            $this->logError(translate('mailer.error'), ['addresses' => $addresses, 'subject' => $subject]);
+            $this->logError(
+                translate('mailer.error'),
+                ['addresses' => $addresses, 'subject' => $subject, 'error' => $mail->ErrorInfo,]
+            );
+            MailError::dispatch(['mailer' => $mail,]);
+
             return false;
         }
 
         $this->logOk(translate('mailer.ok'), ['addresses' => $addresses, 'subject' => $subject]);
+        MailSended::dispatch(['mailer' => $mail,]);
+
         return true;
     }
 }
