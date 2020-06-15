@@ -9,7 +9,7 @@ namespace Scaleplan\Mailer\Exceptions;
  */
 class MailerException extends \Exception
 {
-    public const MESSAGE = 'Mailer error.';
+    public const MESSAGE = 'Ошибка отправки письма.';
     public const CODE = 500;
 
     /**
