@@ -9,6 +9,6 @@ namespace Scaleplan\Mailer\Exceptions;
  */
 class InvalidHostException extends MailerException
 {
-    public const MESSAGE = 'Неверный хост отправки писем.';
+    public const MESSAGE = 'mailer.wrong-smtp';
     public const CODE = 406;
 }
