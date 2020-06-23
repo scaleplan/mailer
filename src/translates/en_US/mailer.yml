@@ -1,2 +1,4 @@
 wrong-smtp: Wrong mail server host.
 send-error: Mail send error.
+error: "Send mails ':subject' to addresses: :addresses failed. Mailer error: :error."
+ok: "Send mails ':subject' to addresses: :addresses successfully done."
