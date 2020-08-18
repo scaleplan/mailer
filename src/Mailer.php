@@ -5,14 +5,15 @@ namespace Scaleplan\Mailer;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use Psr\Log\LoggerInterface;
+use Scaleplan\Mailer\Exceptions\InvalidHostException;
 use Scaleplan\Mailer\Hooks\MailError;
 use Scaleplan\Mailer\Hooks\MailSended;
+use Scaleplan\Translator\Translator;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use function Scaleplan\DependencyInjection\get_required_container;
 use function Scaleplan\Helpers\get_env;
 use function Scaleplan\Helpers\get_required_env;
-use Scaleplan\Mailer\Exceptions\InvalidHostException;
 use function Scaleplan\Translator\translate;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Класс отправки писем
@@ -110,7 +111,8 @@ class Mailer implements MailerInterface
         string $mailLang = null,
         string $mailFromName = null,
         string $mailFrom = null
-    ) {
+    )
+    {
         if (!filter_var(gethostbyname($host), FILTER_VALIDATE_IP)) {
             throw new InvalidHostException();
         }
@@ -125,8 +127,10 @@ class Mailer implements MailerInterface
         $this->mailFromName = $mailFromName ?? get_env('MAIL_FROM_NAME') ?? $this->mailFromName;
         $this->mailSMTPSecure = get_env('MAIL_SMTP_SECURE') ?? $this->mailSMTPSecure;
 
-        $locale = \Locale::acceptFromHttp(($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''))
-            ?: get_required_env('DEFAULT_LANG');
+        $locale = Translator::getRealLocale(
+            \Locale::acceptFromHttp(($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '')),
+            get_required_env('BUNDLE_PATH') . get_required_env('TRANSLATES_PATH')
+        ) ?: get_required_env('DEFAULT_LANG');
         /** @var \Symfony\Component\Translation\Translator $translator */
         $translator = get_required_container(TranslatorInterface::class, [$locale]);
         $translator->addResource('yml', __DIR__ . "/translates/$locale/mailer.yml", $locale, 'mailer');
