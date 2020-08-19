@@ -127,10 +127,13 @@ class Mailer implements MailerInterface
         $this->mailFromName = $mailFromName ?? get_env('MAIL_FROM_NAME') ?? $this->mailFromName;
         $this->mailSMTPSecure = get_env('MAIL_SMTP_SECURE') ?? $this->mailSMTPSecure;
 
-        $locale = Translator::getRealLocale(
-            \Locale::acceptFromHttp(($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '')),
-            get_required_env('BUNDLE_PATH') . get_required_env('TRANSLATES_PATH')
-        ) ?: get_required_env('DEFAULT_LANG');
+        $locale = !empty($_SERVER['HTTP_ACCEPT_LANGUAGE'])
+            ? Translator::getRealLocale(
+                \Locale::acceptFromHttp($_SERVER['HTTP_ACCEPT_LANGUAGE']),
+                get_required_env('BUNDLE_PATH') . get_required_env('TRANSLATES_PATH')
+            )
+            : get_required_env('DEFAULT_LANG');
+
         /** @var \Symfony\Component\Translation\Translator $translator */
         $translator = get_required_container(TranslatorInterface::class, [$locale]);
         $translator->addResource('yml', __DIR__ . "/translates/$locale/mailer.yml", $locale, 'mailer');
